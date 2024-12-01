@@ -1,0 +1,91 @@
+import numpy as np
+import pandas as pd
+from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score, davies_bouldin_score, calinski_harabasz_score
+import matplotlib.pyplot as plt
+
+# Simulate CluStream with sliding time windows
+def clustream_simulation(data, window_size, num_micro_clusters):
+    clusters = []
+    for i in range(0, len(data) - window_size + 1, window_size):
+        window_data = data[i:i + window_size]
+        kmeans = KMeans(n_clusters=num_micro_clusters, random_state=42)
+        kmeans.fit(window_data)
+        clusters.append(kmeans.cluster_centers_)
+    return np.vstack(clusters)
+
+# Cluster Evaluation
+def evaluate_clusters(data, labels):
+    silhouette = silhouette_score(data, labels)
+    davies_bouldin = davies_bouldin_score(data, labels)
+    calinski_harabasz = calinski_harabasz_score(data, labels)
+    return silhouette, davies_bouldin, calinski_harabasz
+
+# Load Dataset
+file_path = "time.csv"  # Update with your CSV file path
+data = pd.read_csv(file_path)
+
+# Preprocessing: Select relevant columns (update column names as needed)
+time_series_data = data[['TOTALDEMAND', 'RRP']]  # Replace with appropriate column names
+time_series_data = time_series_data.dropna()
+
+# Normalize Data
+from sklearn.preprocessing import StandardScaler
+scaler = StandardScaler()
+data_scaled = scaler.fit_transform(time_series_data)
+
+# Parameters to Test
+window_sizes = [10, 20, 30]  # Different window sizes for CluStream
+micro_cluster_numbers = [2, 3, 5]  # Different numbers of micro-clusters
+kmeans_clusters_list = [3, 5, 7]  # Different numbers of clusters for K-Means
+
+results = []
+
+for window_size in window_sizes:
+    for num_micro_clusters in micro_cluster_numbers:
+        for kmeans_clusters in kmeans_clusters_list:
+            # CluStream Simulation
+            clustream_centers = clustream_simulation(data_scaled, window_size, num_micro_clusters)
+            
+            # K-Means Clustering
+            kmeans = KMeans(n_clusters=kmeans_clusters, random_state=42)
+            kmeans.fit(data_scaled)
+            kmeans_labels = kmeans.labels_
+            
+            # Evaluate Clustering Quality
+            clustream_kmeans = KMeans(n_clusters=num_micro_clusters, random_state=42)
+            clustream_kmeans.fit(clustream_centers)
+            clustream_labels = clustream_kmeans.predict(data_scaled)
+            
+            kmeans_metrics = evaluate_clusters(data_scaled, kmeans_labels)
+            clustream_metrics = evaluate_clusters(data_scaled, clustream_labels)
+            
+            # Store Results
+            results.append({
+                "window_size": window_size,
+                "num_micro_clusters": num_micro_clusters,
+                "kmeans_clusters": kmeans_clusters,
+                "kmeans_silhouette": kmeans_metrics[0],
+                "clustream_silhouette": clustream_metrics[0],
+                "kmeans_davies_bouldin": kmeans_metrics[1],
+                "clustream_davies_bouldin": clustream_metrics[1],
+                "kmeans_calinski_harabasz": kmeans_metrics[2],
+                "clustream_calinski_harabasz": clustream_metrics[2],
+            })
+
+# Convert Results to DataFrame for Analysis
+results_df = pd.DataFrame(results)
+
+# Display Results
+print("\nCluster Quality Results:")
+print(results_df)
+
+# Plot Results
+plt.figure(figsize=(10, 6))
+plt.plot(results_df['window_size'], results_df['kmeans_silhouette'], label='K-Means Silhouette', marker='o')
+plt.plot(results_df['window_size'], results_df['clustream_silhouette'], label='CluStream Silhouette', marker='s')
+plt.title("Silhouette Score vs. Window Size")
+plt.xlabel("Window Size")
+plt.ylabel("Silhouette Score")
+plt.legend()
+plt.show()

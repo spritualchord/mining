@@ -1,0 +1,103 @@
+import numpy as np
+import pandas as pd
+from sklearn.cluster import DBSCAN
+from sklearn.ensemble import IsolationForest
+from sklearn.neighbors import LocalOutlierFactor
+from sklearn.preprocessing import StandardScaler
+from scipy.stats import zscore
+import matplotlib.pyplot as plt
+import seaborn as sns
+from pyod.models.hbos import HBOS  # Histogram-based Outlier Score
+
+# Step 1: Load Dataset from CSV
+# Replace 'your_dataset.csv' with the path to your actual CSV file
+file_path = 'your_dataset.csv'
+data = pd.read_csv(file_path)
+
+# Step 2: Optional: Check the first few rows of the dataset
+print("First few rows of the dataset:")
+print(data.head())
+
+# Step 3: Preprocess Data (Optional)
+# Selecting numerical columns only for outlier detection
+numerical_columns = data.select_dtypes(include=[np.number]).columns
+data_numerical = data[numerical_columns]
+
+# Normalize Data (important for clustering-based methods)
+scaler = StandardScaler()
+data_scaled = scaler.fit_transform(data_numerical)
+
+# Step 4: Outlier Detection Methods
+
+# 1. Z-Score Method
+def detect_outliers_zscore(data, threshold=3):
+    z_scores = np.abs(zscore(data))
+    return np.where(z_scores > threshold)
+
+z_outliers = detect_outliers_zscore(data_scaled)
+z_outlier_indices = set(z_outliers[0])
+print(f"Z-Score Method: Detected {len(z_outlier_indices)} outliers")
+
+# 2. Isolation Forest
+iso_forest = IsolationForest(contamination=0.05, random_state=42)
+iso_outliers = iso_forest.fit_predict(data_scaled)
+iso_outlier_indices = set(np.where(iso_outliers == -1)[0])
+print(f"Isolation Forest Method: Detected {len(iso_outlier_indices)} outliers")
+
+# 3. DBSCAN
+dbscan = DBSCAN(eps=0.5, min_samples=5)  # Adjust eps as needed
+dbscan_labels = dbscan.fit_predict(data_scaled)
+dbscan_outlier_indices = set(np.where(dbscan_labels == -1)[0])
+print(f"DBSCAN Method: Detected {len(dbscan_outlier_indices)} outliers")
+
+# 4. KNN (Local Outlier Factor)
+knn = LocalOutlierFactor(n_neighbors=20, contamination=0.05)
+knn_outliers = knn.fit_predict(data_scaled)
+knn_outlier_indices = set(np.where(knn_outliers == -1)[0])
+print(f"KNN Method: Detected {len(knn_outlier_indices)} outliers")
+
+# 5. Histogram-Based Outlier Score (HBOS)
+hbos = HBOS(contamination=0.05)
+hbos.fit(data_scaled)
+hbos_outliers = hbos.predict(data_scaled)
+hbos_outlier_indices = set(np.where(hbos_outliers == 1)[0])
+print(f"HBOS Method: Detected {len(hbos_outlier_indices)} outliers")
+
+# Step 5: Visualize Outliers (DBSCAN and Isolation Forest as examples)
+plt.figure(figsize=(10, 6))
+sns.scatterplot(x=data_scaled[:, 0], y=data_scaled[:, 1], hue=(iso_outliers == -1), palette="Set1", s=50)
+plt.title("Outliers Detected by Isolation Forest")
+plt.xlabel("Feature 1")
+plt.ylabel("Feature 2")
+plt.legend(title="Outlier", loc="upper right")
+plt.show()
+
+plt.figure(figsize=(10, 6))
+sns.scatterplot(x=data_scaled[:, 0], y=data_scaled[:, 1], hue=(dbscan_labels == -1), palette="Set1", s=50)
+plt.title("Outliers Detected by DBSCAN")
+plt.xlabel("Feature 1")
+plt.ylabel("Feature 2")
+plt.legend(title="Outlier", loc="upper right")
+plt.show()
+
+# Step 6: Compare Results
+methods = ["Z-Score", "Isolation Forest", "DBSCAN", "KNN", "HBOS"]
+outlier_counts = [
+    len(z_outlier_indices),
+    len(iso_outlier_indices),
+    len(dbscan_outlier_indices),
+    len(knn_outlier_indices),
+    len(hbos_outlier_indices),
+]
+
+comparison_df = pd.DataFrame({"Method": methods, "Outliers Detected": outlier_counts})
+print("\nComparison of Outlier Detection Methods:")
+print(comparison_df)
+
+# Bar Plot for Comparison
+plt.figure(figsize=(8, 5))
+sns.barplot(x="Method", y="Outliers Detected", data=comparison_df, palette="viridis")
+plt.title("Comparison of Outlier Detection Methods")
+plt.xlabel("Method")
+plt.ylabel("Outliers Detected")
+plt.show()

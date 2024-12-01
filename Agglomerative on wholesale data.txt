@@ -1,0 +1,53 @@
+# Import necessary libraries
+import pandas as pd
+import numpy as np
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import AgglomerativeClustering
+from sklearn.decomposition import PCA
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# 1. Wholesale Customers Dataset
+wholesale_data = pd.read_csv('Wholesale customers data.csv')
+
+wholesale_cleaned = wholesale_data.drop(['Region', 'Channel'], axis=1)
+
+scaler = StandardScaler()
+wholesale_scaled = scaler.fit_transform(wholesale_cleaned)
+
+# Perform Agglomerative Clustering
+wholesale_model = AgglomerativeClustering(n_clusters=3, linkage='ward', affinity='euclidean')
+wholesale_labels = wholesale_model.fit_predict(wholesale_scaled)
+
+wholesale_data['Cluster'] = wholesale_labels
+print("Wholesale Cluster Mean Values:\n", wholesale_data.groupby('Cluster').mean())
+
+wholesale_pca = PCA(n_components=2)
+wholesale_2d = wholesale_pca.fit_transform(wholesale_scaled)
+
+plt.figure(figsize=(8, 6))
+sns.scatterplot(x=wholesale_2d[:, 0], y=wholesale_2d[:, 1], hue=wholesale_labels, palette='viridis', s=100)
+plt.title('Agglomerative Clustering - Wholesale Customers')
+plt.show()
+
+# 2. Iris Dataset
+from sklearn.datasets import load_iris
+iris = load_iris()
+iris_data = pd.DataFrame(iris.data, columns=iris.feature_names)
+
+iris_scaled = scaler.fit_transform(iris_data)
+
+# Perform Agglomerative Clustering
+iris_model = AgglomerativeClustering(n_clusters=3, linkage='ward', affinity='euclidean')
+iris_labels = iris_model.fit_predict(iris_scaled)
+
+iris_data['Cluster'] = iris_labels
+print("\nIris Cluster Mean Values:\n", iris_data.groupby('Cluster').mean())
+
+iris_pca = PCA(n_components=2)
+iris_2d = iris_pca.fit_transform(iris_scaled)
+
+plt.figure(figsize=(8, 6))
+sns.scatterplot(x=iris_2d[:, 0], y=iris_2d[:, 1], hue=iris_labels, palette='coolwarm', s=100)
+plt.title('Agglomerative Clustering - Iris Dataset')
+plt.show()

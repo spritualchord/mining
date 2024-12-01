@@ -1,0 +1,37 @@
+from pyod.models.knn import KNN
+from sklearn.datasets import make_blobs
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Generating synthetic data
+X, _ = make_blobs(n_samples=300, centers=1, cluster_std=0.60, random_state=0)
+
+# Introducing some outliers
+X[:20] = X[:20] + 5
+
+# KNN for Outlier Detection
+clf = KNN()
+clf.fit(X)
+outliers = clf.predict(X)
+
+# Plot the data
+plt.scatter(X[:, 0], X[:, 1], c=outliers, cmap='coolwarm')
+plt.title("KNN Outlier Detection")
+plt.show()
+
+clf = KNN(metric='euclidean')
+
+# Load Iris dataset
+from sklearn.datasets import load_iris
+data = load_iris()
+X = data.data
+
+# KNN Outlier Detection on Iris
+clf = KNN()
+clf.fit(X)
+outliers_iris = clf.predict(X)
+
+# Plot results
+plt.scatter(X[:, 0], X[:, 1], c=outliers_iris, cmap='coolwarm')
+plt.title("KNN Outlier Detection on Iris Dataset")
+plt.show()

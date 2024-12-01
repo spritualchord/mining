@@ -1,0 +1,22 @@
+import pandas as pd
+from scipy import stats
+
+# Load Iris dataset
+iris = pd.read_csv('Iris.csv')
+
+# Calculate Z-scores for 'sepal length' column
+z_scores = stats.zscore(iris['sepal length'])
+
+# Identify outliers (Z-score > 3 or < -3)
+outliers = iris[z_scores > 3]
+print(outliers)
+
+# Load Titanic dataset
+titanic = pd.read_csv('titanic.csv')
+
+# Calculate Z-scores for 'Age' column
+z_scores_titanic = stats.zscore(titanic['Age'])
+
+# Identify outliers (Z-score > 3 or < -3)
+outliers_titanic = titanic[z_scores_titanic > 3]
+print(outliers_titanic)

@@ -1,0 +1,120 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy import stats
+from sklearn.ensemble import IsolationForest
+
+# Step 1: Create Random Datasets
+# Seed for reproducibility
+np.random.seed(42)
+
+# Create a normal dataset
+data1 = np.random.normal(loc=0, scale=1, size=1000)
+
+# Create a dataset with anomalies
+data2 = np.random.normal(loc=0, scale=1, size=1000)
+anomalies = np.random.uniform(low=-10, high=10, size=50)  # Add anomalies
+data2 = np.concatenate((data2, anomalies))
+
+# Plot the datasets
+plt.figure(figsize=(12, 6))
+
+plt.subplot(1, 2, 1)
+plt.hist(data1, bins=30, alpha=0.7, color='blue', edgecolor='black')
+plt.title('Normal Dataset')
+plt.xlabel('Value')
+plt.ylabel('Frequency')
+
+plt.subplot(1, 2, 2)
+plt.hist(data2, bins=30, alpha=0.7, color='orange', edgecolor='black')
+plt.title('Dataset with Anomalies')
+plt.xlabel('Value')
+plt.ylabel('Frequency')
+
+plt.tight_layout()
+plt.show()
+
+# Step 2: Apply Kernel Density Estimation (KDE)
+def find_anomalies(data, threshold=0.01):
+    # Perform KDE
+    kde = stats.gaussian_kde(data)
+    # Evaluate KDE on a range of values
+    x = np.linspace(min(data) - 1, max(data) + 1, 1000)
+    density = kde(x)
+
+    # Identify anomalies
+    anomalies = x[density < threshold]
+    return anomalies, x, density
+
+# Finding anomalies in both datasets
+anomalies1, x1, density1 = find_anomalies(data1)
+anomalies2, x2, density2 = find_anomalies(data2)
+
+# Print the results to the console
+print("\nAnomalies in Normal Dataset:")
+print(anomalies1)
+
+print("\nAnomalies in Dataset with Anomalies:")
+print(anomalies2)
+
+# Plotting KDE results
+plt.figure(figsize=(12, 6))
+
+# Dataset 1
+plt.subplot(1, 2, 1)
+plt.plot(x1, density1, label='KDE', color='blue')
+plt.fill_between(x1, density1, where=(density1 < 0.01), color='red', alpha=0.5)
+plt.title('KDE for Normal Dataset')
+plt.xlabel('Value')
+plt.ylabel('Density')
+plt.legend()
+
+# Dataset 2
+plt.subplot(1, 2, 2)
+plt.plot(x2, density2, label='KDE', color='orange')
+plt.fill_between(x2, density2, where=(density2 < 0.01), color='red', alpha=0.5)
+plt.title('KDE for Dataset with Anomalies')
+plt.xlabel('Value')
+plt.ylabel('Density')
+plt.legend()
+
+plt.tight_layout()
+plt.show()
+
+# Step 3: Apply Isolation Forest for Anomaly Detection
+def apply_isolation_forest(data):
+    data = data.reshape(-1, 1)  # Reshape for IsolationForest
+    model = IsolationForest(contamination=0.05, random_state=42)
+    model.fit(data)
+    anomalies = model.predict(data)
+    
+    # -1 indicates anomaly, 1 indicates normal
+    return anomalies
+
+# Applying Isolation Forest on both datasets
+anomalies_iforest1 = apply_isolation_forest(data1)
+anomalies_iforest2 = apply_isolation_forest(data2)
+
+# Count anomalies detected
+print("Isolation Forest detected anomalies in Normal Dataset:", np.sum(anomalies_iforest1 == -1))
+print("Isolation Forest detected anomalies in Dataset with Anomalies:", np.sum(anomalies_iforest2 == -1))
+print()
+
+# Visualize the anomalies detected by Isolation Forest
+plt.figure(figsize=(12, 6))
+
+# Dataset 1 - Normal
+plt.subplot(1, 2, 1)
+plt.scatter(data1, np.zeros_like(data1), c=anomalies_iforest1, cmap='coolwarm', marker='x')
+plt.title('Isolation Forest - Normal Dataset')
+plt.xlabel('Value')
+plt.yticks([])
+
+# Dataset 2 - With Anomalies
+plt.subplot(1, 2, 2)
+plt.scatter(data2, np.zeros_like(data2), c=anomalies_iforest2, cmap='coolwarm', marker='x')
+plt.title('Isolation Forest - Dataset with Anomalies')
+plt.xlabel('Value')
+plt.yticks([])
+
+plt.tight_layout()
+plt.show()

@@ -1,0 +1,92 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.datasets import load_iris, load_diabetes
+
+plt.style.use('ggplot')
+
+# Load the Iris dataset
+iris = load_iris()
+df_iris = pd.DataFrame(data=iris.data, columns=iris.feature_names)
+
+# Load the Diabetes dataset and filter to 6 attributes
+diabetes = load_diabetes()
+df_diabetes = pd.DataFrame(data=diabetes.data, columns=diabetes.feature_names)
+df_diabetes = df_diabetes.iloc[:, :6]  # Select first 6 attributes
+
+# Function to plot histograms, detect outliers, and plot outliers in specified grid format
+def plot_histograms_and_detect_outliers(df, thresholds, hist_nrows, hist_ncols, outlier_nrows, outlier_ncols):
+    outliers_dict = {threshold: {} for threshold in thresholds}
+    num_attributes = len(df.columns)
+
+    # Create a figure with subplots for histograms
+    fig, axes = plt.subplots(nrows=hist_nrows, ncols=hist_ncols, figsize=(15, 10))
+    axes = axes.flatten() if num_attributes > 1 else [axes]
+
+    for i, column in enumerate(df.columns):
+        if df[column].dtype in [np.int64, np.float64]:  # Only numerical columns
+            # Calculate mean and standard deviation
+            mean = df[column].mean()
+            std = df[column].std()
+
+            # Plot histogram
+            axes[i].hist(df[column], bins=20, color='skyblue', edgecolor='black', alpha=0.7, label='Data')
+            axes[i].axvline(mean, color='red', linestyle='dashed', linewidth=2, label='Mean')
+            for threshold in thresholds:
+                axes[i].axvline(mean + threshold * std, color='orange', linestyle='dashed', linewidth=1.5, label=f'{threshold} Std Dev')
+                axes[i].axvline(mean - threshold * std, color='orange', linestyle='dashed', linewidth=1.5)
+            axes[i].set_title(f'Histogram of {column.capitalize()}', fontsize=14, fontweight='bold')
+            axes[i].set_xlabel(column.capitalize(), fontsize=12)
+            axes[i].set_ylabel('Frequency', fontsize=12)
+            axes[i].legend()
+            axes[i].grid(True, linestyle='--', alpha=0.7)
+
+            # Detect outliers
+            for threshold in thresholds:
+                outliers = df[(df[column] < mean - threshold * std) | (df[column] > mean + threshold * std)]
+                outliers_dict[threshold][column] = outliers
+                print(f'\nOutliers in {column} with threshold {threshold} standard deviations:')
+                print(outliers)
+
+    # Hide any unused subplots if the number of attributes is less than grid size
+    for j in range(num_attributes, len(axes)):
+        axes[j].axis('off')
+
+    plt.tight_layout()
+    plt.show()
+
+    # Plot outliers in a single figure with specified grid layout
+    fig, axes = plt.subplots(nrows=outlier_nrows, ncols=outlier_ncols, figsize=(15, 10))
+    axes = axes.flatten()  # Flatten the axes for easy indexing
+    
+    used_axes = 0  # Counter for used axes
+    for threshold in thresholds:
+        for i, (column, outliers) in enumerate(outliers_dict[threshold].items()):
+            if not outliers.empty:
+                axes[used_axes].scatter(outliers.index, outliers[column], color='red', label='Outliers')
+                axes[used_axes].set_title(f'{column.capitalize()} (Threshold {threshold} Std Dev)', fontsize=14, fontweight='bold')
+                axes[used_axes].set_xlabel('Index')
+                axes[used_axes].set_ylabel(column.capitalize())
+                axes[used_axes].legend()
+                axes[used_axes].grid(True, linestyle='--', alpha=0.7)
+                used_axes += 1  # Increment the counter
+
+    # Hide any unused subplots
+    for j in range(used_axes, len(axes)):
+        axes[j].axis('off')
+
+    plt.tight_layout()
+    plt.show()
+
+    return outliers_dict
+
+# Define thresholds
+thresholds = [2, 3]
+
+# Analyze Iris dataset
+print("Analyzing Iris dataset:")
+outliers_iris = plot_histograms_and_detect_outliers(df_iris, thresholds, 2, 2, 1, 3)
+
+# Analyze Diabetes dataset
+print("Analyzing Diabetes dataset:")
+outliers_diabetes = plot_histograms_and_detect_outliers(df_diabetes, thresholds, 2, 3, 2, 4)

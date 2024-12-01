@@ -1,0 +1,59 @@
+import pandas as pd
+import numpy as np
+from sklearn.datasets import load_iris
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# 1. K-means on Iris Dataset
+iris = load_iris()
+iris_data = pd.DataFrame(iris.data, columns=iris.feature_names)
+
+scaler = StandardScaler()
+iris_scaled = scaler.fit_transform(iris_data)
+
+kmeans_iris = KMeans(n_clusters=3, random_state=42)
+iris_labels = kmeans_iris.fit_predict(iris_scaled)
+
+iris_data['Cluster'] = iris_labels
+
+plt.figure(figsize=(8, 6))
+sns.scatterplot(x=iris_scaled[:, 0], y=iris_scaled[:, 1], hue=iris_labels, palette='viridis', s=100)
+plt.title('K-means Clustering on Iris Dataset (n_clusters=3)')
+plt.show()
+
+kmeans_iris_alt = KMeans(n_clusters=4, random_state=42)
+iris_labels_alt = kmeans_iris_alt.fit_predict(iris_scaled)
+
+plt.figure(figsize=(8, 6))
+sns.scatterplot(x=iris_scaled[:, 0], y=iris_scaled[:, 1], hue=iris_labels_alt, palette='coolwarm', s=100)
+plt.title('K-means on Iris Dataset (n_clusters=4)')
+plt.show()
+
+# 2. K-means on Mall Customers Dataset
+mall_data = pd.read_csv('Mall_Customers.csv')
+
+mall_features = mall_data[['Annual Income (k$)', 'Spending Score (1-100)']]
+
+mall_scaled = scaler.fit_transform(mall_features)
+
+kmeans_mall = KMeans(n_clusters=5, random_state=42)
+mall_labels = kmeans_mall.fit_predict(mall_scaled)
+
+mall_data['Cluster'] = mall_labels
+
+plt.figure(figsize=(8, 6))
+sns.scatterplot(x=mall_features['Annual Income (k$)'], y=mall_features['Spending Score (1-100)'],
+                hue=mall_labels, palette='viridis', s=100)
+plt.title('K-means on Mall Customers (n_clusters=5)')
+plt.show()
+
+kmeans_mall_alt = KMeans(n_clusters=5, random_state=0)
+mall_labels_alt = kmeans_mall_alt.fit_predict(mall_scaled)
+
+plt.figure(figsize=(8, 6))
+sns.scatterplot(x=mall_features['Annual Income (k$)'], y=mall_features['Spending Score (1-100)'],
+                hue=mall_labels_alt, palette='coolwarm', s=100)
+plt.title('K-means on Mall Customers (Changed random_state)')
+plt.show()

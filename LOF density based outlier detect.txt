@@ -1,0 +1,38 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.neighbors import LocalOutlierFactor
+from sklearn.datasets import make_blobs
+
+# Generate synthetic dataset for outlier detection
+X, _ = make_blobs(n_samples=200, centers=1, cluster_std=1.0, random_state=42)
+X_with_outliers = np.vstack([X, np.random.uniform(low=-10, high=10, size=(20, 2))])
+
+# Initialize LOF model
+lof = LocalOutlierFactor(n_neighbors=20, contamination=0.1)
+
+# Fit LOF model
+y_pred = lof.fit_predict(X_with_outliers)
+
+# Plotting results
+plt.scatter(X_with_outliers[:, 0], X_with_outliers[:, 1], c=y_pred, cmap='coolwarm', edgecolor='k')
+plt.title("Outlier Detection using LOF")
+plt.xlabel("Feature 1")
+plt.ylabel("Feature 2")
+plt.show()
+
+from sklearn.datasets import load_iris
+
+# Load the Iris dataset
+iris = load_iris()
+X_iris = iris.data
+
+# Apply LOF
+lof_iris = LocalOutlierFactor(n_neighbors=20, contamination=0.05)
+y_pred_iris = lof_iris.fit_predict(X_iris)
+
+# Plot results for Iris dataset
+plt.scatter(X_iris[:, 0], X_iris[:, 1], c=y_pred_iris, cmap='coolwarm', edgecolor='k')
+plt.title("Outlier Detection on Iris Dataset using LOF")
+plt.xlabel("Sepal Length")
+plt.ylabel("Sepal Width")
+plt.show()
